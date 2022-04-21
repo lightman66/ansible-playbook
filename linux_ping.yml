@@ -1,0 +1,7 @@
+-
+  name: Testing
+  hosts: "{{ deployment_host_group }}"
+  gather_facts: no
+  tasks:
+   - name: Ping Test
+     ping:

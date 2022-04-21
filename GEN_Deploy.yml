@@ -1,0 +1,71 @@
+-
+ name: Deployment to Target Server
+ hosts: all
+ tasks:
+  - name: 1) Create ansible deploy directory if un-exists
+    win_file:
+     path: "{{ item.dirname }}"
+     state: directory 
+    with_items: "{{ require_Dir }}"
+
+  - name: 2) Create and Write into the log file
+    win_lineinfile:
+     path: "{{ logdir }}\\Deploy-{{ appname }}_{{ ansible_date_time.date }}.txt"
+     create: True
+     line: Deployment {{ appname}}  files starts at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+     newline: windows
+
+  - name: 3) Download deployment package
+    win_copy:
+     src: "{{ download_at_path }}//{{ item.packageName }}.zip"
+     dest: "{{ download_target_path }}"
+    with_items: "{{ download_list }}"
+ 
+  - name: 4) Unzip package
+    win_unzip:     
+     src: "{{ download_target_path }}\\{{ item.packageName }}.zip"
+     dest: "{{ unzip_deploy_path }}\\{{ item.packageName }}"
+    with_items: "{{ download_list }}"
+
+  - name: 5) Stop window services on host if var exists, else skip
+    win_service:
+     name: "{{item.name}}"
+     state: stopped
+    with_items: "{{winsvc_name}}"
+    when: "ansible_nodename==item.hname"
+    tag: winservice
+     
+  - name: 6) Copy to to production path
+    win_copy:     
+     src: "{{ unzip_deploy_path }}\\{{ item.pfname }}"
+     dest: "{{ item.copyTo }}"
+     remote_src: True
+    with_items: "{{ copy_list }}" 
+
+  - name: 7) Recycle appPool if var exists, else skip
+    win_iis_webapppool:
+     name: "{{item.aname}}"
+     state: restarted
+    with_items: "{{apppool_name}}"
+    when: "ansible_nodename==item.hname"
+    tag: webpool
+
+  - name: 8) Start window services on host if var exists, else skip
+    win_service:
+     name: "{{item.name}}"
+     state: started
+    with_items: "{{winsvc_name}}"
+    when: "ansible_nodename==item.hname"
+    tag: winservice
+
+  - name: 9) Write into the log file
+    win_lineinfile:
+     path: "{{ logdir }}\\Deploy-CDOC_{{ ansible_date_time.date }}.txt"
+     line: Deployment files ends at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+     newline: windows
+  
+  - name: 10) Remove unzip deployment files and directory structure
+    win_file:
+     path:  "{{ unzip_deploy_path }}\\{{ item.packageName }}"
+     state: absent
+    with_items: "{{ download_list }}"

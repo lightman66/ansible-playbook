@@ -1,0 +1,42 @@
+-
+ hosts: all
+ name: Create backup
+ tasks:
+   - name: Create IHISApps_Backup directory if doesnt exist
+     win_file:
+      path: "{{ mainbackuppath }}"
+      state: directory
+
+   - name: Create a backup log directory
+     win_file:
+      path: "{{ logdir }}"
+      state: directory
+
+   - name: Create and Write into the log file
+     win_lineinfile:
+      path: "{{ logdir }}\\Backup-{{ appname}}_{{ ansible_date_time.date }}.txt"
+      create: True
+      line: Backup {{ appname }} files starts at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+      newline: windows
+
+   - name: Backup
+     win_command: cmd.exe /c D:\Deployment\Scripts\zip.exe -r "{{ mainbackuppath }}\ans_{{item.dname}}_{{ backup_date }}.zip" "{{ item.backuppath }}" -x "**/Logs/*" "**/Log/*" -x "*TempImages*"
+     with_items: "{{backuplist}}"
+      
+   - name: Write into the log file
+     win_lineinfile:
+      path:  "{{ logdir }}\\Backup-{{ appname}}_{{ ansible_date_time.date }}.txt"
+      line: Backup {{ appname }} files Completed at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+      newline: windows
+
+   - name: List backup file
+     register: listout
+     win_find:
+      paths: D:\IHISApps_Backup\
+      file_type: file
+      patterns: ['ans*.zip']
+      age: -3600
+   - debug:
+      msg: "{{item.filename}} with {{item.size}} bytes"
+     loop: "{{listout.files}}"
+
