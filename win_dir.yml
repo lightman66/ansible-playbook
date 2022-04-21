@@ -1,0 +1,15 @@
+-
+ hosts: all
+ name: list all directory
+ tasks:
+   - name: List directory in D:\IHISApps\Staging\
+     register: listout
+     win_find:
+      paths: d:\Deployment\Packages\ansible_todeploy
+      recurse: yes
+      #patterns: [ 'OTR_NUH', 'EDWeb' ]
+      file_type: directory
+   - debug:
+      msg: "{{item.filename}}"
+     loop: "{{listout.files}}"
+

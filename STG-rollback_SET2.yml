@@ -1,0 +1,72 @@
+-
+ name: Rollback from Staging Servers Set 2
+ hosts: cdoc_stg_set2_server
+ tasks:
+  - name: Create torollback directory if doesnt exist
+    win_file:
+     path: d:\Deployment\Packages\torollback\
+     state: directory 
+
+  - name: Create a rollback log file
+    win_file:
+     path: d:\Deployment\Scripts\DeployLogs\Rollback-CDOC_{{ ansible_date_time.date }}.txt
+     state: touch 
+
+  - name: Write into the log file
+    win_lineinfile:
+     path: d:\Deployment\Scripts\DeployLogs\Rollback-CDOC_{{ ansible_date_time.date }}.txt
+     create: false
+     line: Rollback CDOC files starts at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+     newline: windows
+
+  - name: Rollback and untar in rollback folder cdoc
+    win_unzip:     
+     src: "{{ cdoc_backuppath }}\\ans_cdoc_config_{{ cdoc_backup_restore_date }}.zip"
+     dest: "{{ rollback_path }}"
+           
+  - name: Copy and replace application folder cdoc1
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\cdoc1"
+     dest: "{{ app_path }}"
+     remote_src: True
+   
+  - name: Copy and replace application folder Cdocnuh
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\Cdoc1_nuh"
+     dest: "{{ app_path }}"
+     remote_src: True
+
+  - name: Copy and replace application folder Cdocsvc
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\Cdocsvc"
+     dest: "{{ app_path }}"
+     remote_src: True
+
+  - name: Copy and replace application folder  Cdocimh
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\Cdoc1_imh"
+     dest: "{{ app_path }}"
+     remote_src: True
+
+
+  - name: Copy and replace application folder cdoc1_nhgp
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\cdoc1_nhgp"
+     dest: "{{ app_path }}"
+     remote_src: True
+
+
+  - name: Copy and replace application folder cdoc_pastnoteviewer
+    win_copy:     
+     src: "{{ rollback_path }}\\IHISApps\\Staging\\cdoc1_pastnoteviewer"
+     dest: "{{ app_path }}"
+     remote_src: True
+     
+  - name: Write into the log file
+    win_lineinfile:
+     path: d:\Deployment\Scripts\DeployLogs\Rollback-CDOC_{{ ansible_date_time.date }}.txt
+     create: false
+     line: Rollback CDOC files Ends at {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+     newline: windows
+ 
+  
